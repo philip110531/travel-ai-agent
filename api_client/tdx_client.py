@@ -52,30 +52,30 @@ class TDXClient:
             return None
 
 # ==========================================
-# 🧪 測試區塊 (只會在直接執行此檔案時運作)
+# 測試區塊 (只會在直接執行此檔案時運作)
 # ==========================================
 if __name__ == "__main__":
     print("啟動 TDX 客戶端，正在連線換取 Token...")
     client = TDXClient()
     print("✅ Token 取得成功！\n")
     
-    # 測試地點：中壢火車站 (你可以隨便改成你家附近的經緯度)
+    # 測試地點：中壢火車站
     test_lat = 24.9537
     test_lon = 121.2256
     search_radius = 500
     
-    print(f"🔍 正在搜尋 中壢火車站 ({test_lat}, {test_lon}) 附近 {search_radius} 公尺的路外停車場...")
+    print(f"正在搜尋 中壢火車站 ({test_lat}, {test_lon}) 附近 {search_radius} 公尺的路外停車場...")
     
     # 呼叫 API
     result_data = client.get_nearby_parking(test_lat, test_lon, search_radius)
     
     if result_data:
         # TDX 的 Advanced API 回傳通常會是一個包含多筆資料的列表 (List) 或是包在 CarParks 裡面
-        # 這裡我們做一個安全的讀取機制
+        # 這裡做一個安全的讀取機制
         parks = result_data.get("CarParks", []) if isinstance(result_data, dict) else result_data
 
         print(json.dumps(parks[0], ensure_ascii=False, indent=4))
-        print(f"🎉 成功找到 {len(parks)} 個停車場！前 3 筆資料摘要：\n")
+        print(f"成功找到 {len(parks)} 個停車場！前 3 筆資料摘要：\n")
         for i, park in enumerate(parks[:3], 1):
             # TDX 的 JSON 結構比較深，我們把它挖出來印
             name = park.get("CarParkName", {}).get("Zh_tw", "未知名稱")

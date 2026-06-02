@@ -33,7 +33,7 @@ class WeatherService:
 
         target_url = f"{self.base_url}{dataset_id}"
 
-        # 🌟 關鍵修正：不在 URL 進行過濾，直接裸抓該縣市！
+        # 關鍵修正：不在 URL 進行過濾，直接裸抓該縣市
         params = {"format": "JSON"}
 
         try:
@@ -49,7 +49,7 @@ class WeatherService:
             # 抓出該縣市下所有的「區」
             districts = locations_list[0].get("Location", [])
             
-            # 🌟 在 Python 裡面用迴圈尋找我們的目標區
+            # 在 Python 裡面用迴圈尋找我們的目標區
             target_district = None
             for d in districts:
                 if d.get("LocationName") == town_name:
@@ -59,7 +59,7 @@ class WeatherService:
             if not target_district:
                 return {"error": f"在 {normalized_city} 中找不到 {town_name}"}
 
-            # 🌟 尋找終極大絕招：「天氣預報綜合描述」
+            # 尋找「天氣預報綜合描述」
             for element in target_district.get("WeatherElement", []):
                 if element.get("ElementName") == "天氣預報綜合描述":
                     # 抽出最近一個時段的描述
@@ -76,7 +76,7 @@ class WeatherService:
             return {"error": f"解析發生錯誤: {e}"}
 
 # ==========================================
-# 🧪 測試區塊 
+# 測試區塊 
 # ==========================================
 if __name__ == "__main__":
     weather_svc = WeatherService()
