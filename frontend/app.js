@@ -1,12 +1,23 @@
 // =====================================================
 // API 設定
-// USE_MOCK_DATA = false：正式呼叫 localhost 後端 / Agent API
-// 如果後端還沒開好，可以暫時改成 true 測試畫面。
+// USE_MOCK_DATA = false：正式呼叫 ADK API Server
+// USE_MOCK_DATA = true：使用假資料測試前端畫面
 // =====================================================
 const USE_MOCK_DATA = false;
 
-// 先連 localhost。
-const AGENT_API_URL = "http://127.0.0.1:8001/";
+// ADK API Server 位置
+// 你目前是用：adk api_server --port 8001
+const ADK_BASE_URL = "http://127.0.0.1:8001";
+
+// ADK 的 app_name 通常是你的專案資料夾名稱
+// 你之前已經把 travel-ai-agent 改成 travel_ai_agent，所以這裡用底線版本
+const ADK_APP_NAME = "travel_ai_agent";
+
+// 前端固定使用者 ID
+const ADK_USER_ID = "user";
+
+// ADK 需要 session_id，第一次送訊息前會自動建立
+let adkSessionId = null;
 
 let currentItinerary = null;
 let currentDay = 1;
@@ -28,6 +39,120 @@ async function sendMessage() {
     input.value = "";
 
     await sendTextToAgent(text);
+}
+
+
+// =====================================================
+// 建立 ADK Session
+// ADK API Server 在送訊息前，需要先建立一個 session。
+// 成功後會把 session id 存到 adkSessionId，後續訊息重複使用同一個 session。
+// =====================================================
+async function createAdkSessionIfNeeded() {
+    if (adkSessionId) {
+        return adkSessionId;
+    }
+
+    const response = await fetch(
+        `${ADK_BASE_URL}/apps/${ADK_APP_NAME}/users/${ADK_USER_ID}/sessions`,
+        {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({})
+        }
+    );
+
+    if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`建立 ADK session 失敗：${errorText}`);
+    }
+
+    const data = await response.json();
+
+    adkSessionId = data.id;
+
+    return adkSessionId;
+}
+
+
+// =====================================================
+// 呼叫 ADK Agent
+// 把使用者文字送到 /run_sse。
+// ADK 回傳的是 SSE 格式，所以不能直接當普通 JSON 處理。
+// =====================================================
+async function callAdkAgent(userText) {
+    const sessionId = await createAdkSessionIfNeeded();
+
+    const response = await fetch(`${ADK_BASE_URL}/run_sse`, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+            app_name: ADK_APP_NAME,
+            user_id: ADK_USER_ID,
+            session_id: sessionId,
+            new_message: {
+                role: "user",
+                parts: [
+                    {
+                        text: userText
+                    }
+                ]
+            }
+        })
+    });
+
+    if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`呼叫 ADK Agent 失敗：${errorText}`);
+    }
+
+    const sseText = await response.text();
+
+    return extractTextFromSse(sseText);
+}
+
+
+// =====================================================
+// 解析 ADK /run_sse 回傳的 SSE 文字
+// ADK 回傳格式通常是一行一行 data: {...}
+// 這個函式會把 content.parts 裡面的 text 抽出來。
+// =====================================================
+function extractTextFromSse(sseText) {
+    const lines = sseText.split("\n");
+    const messages = [];
+
+    for (const line of lines) {
+        if (!line.startsWith("data:")) {
+            continue;
+        }
+
+        const jsonText = line.replace("data:", "").trim();
+
+        if (!jsonText || jsonText === "[DONE]") {
+            continue;
+        }
+
+        try {
+            const eventData = JSON.parse(jsonText);
+
+            const parts = eventData.content?.parts;
+
+            if (Array.isArray(parts)) {
+                parts.forEach((part) => {
+                    if (part.text) {
+                        messages.push(part.text);
+                    }
+                });
+            }
+        } catch (error) {
+            console.warn("無法解析 SSE data：", jsonText, error);
+        }
+    }
+
+    return messages.join("\n").trim();
 }
 
 
@@ -97,25 +222,31 @@ async function sendTextToAgent(text) {
     try {
         appendMessage("bot", "正在幫你處理，請稍候...");
 
-        const response = await fetch(AGENT_API_URL, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-                message: text,
-                room_code: currentRoomCode,
-                latitude: currentLocation ? currentLocation.latitude : null,
-                longitude: currentLocation ? currentLocation.longitude : null
-            })
-        });
+        let messageToAgent = text;
 
-        const responseText = await response.text();
+        // 如果目前已有房間代碼，但使用者這句話沒有提到房間代碼，
+        // 就自動補給 Agent，避免 Agent 忘記目前房間。
+        if (currentRoomCode && !text.includes(currentRoomCode)) {
+            messageToAgent = `目前房間代碼是 ${currentRoomCode}。${text}`;
+        }
+
+        // 如果有定位資料，也一起用自然語言附給 Agent。
+        // 因為 ADK Agent 接收的是文字訊息，不是自訂的 latitude / longitude 欄位。
+        if (currentLocation) {
+            messageToAgent += `\n我的目前座標是：緯度 ${currentLocation.latitude}，經度 ${currentLocation.longitude}。`;
+        }
+
+        const responseText = await callAdkAgent(messageToAgent);
+
+        if (!responseText) {
+            appendMessage("bot", "AI 沒有回傳文字內容，請查看 ADK 終端機是否有錯誤。");
+            return;
+        }
 
         processAiResponse(responseText);
     } catch (error) {
-        console.error("呼叫後端失敗：", error);
-        appendMessage("bot", "連線後端失敗，請確認 API 是否啟動、網址是否正確，或後端是否允許 CORS。");
+        console.error("呼叫 ADK 失敗：", error);
+        appendMessage("bot", `連線 ADK 失敗：${error.message}`);
     }
 }
 
@@ -883,9 +1014,11 @@ function escapeHtml(text) {
 document.addEventListener("DOMContentLoaded", () => {
     const input = document.getElementById("user-input");
 
-    input.addEventListener("keydown", (event) => {
-        if (event.key === "Enter") {
-            sendMessage();
-        }
-    });
+    if (input) {
+        input.addEventListener("keydown", (event) => {
+            if (event.key === "Enter") {
+                sendMessage();
+            }
+        });
+    }
 });
