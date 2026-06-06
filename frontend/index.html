@@ -54,6 +54,7 @@
             padding: 9px 11px;
             border-radius: 8px;
             line-height: 1.5;
+            white-space: pre-wrap;
         }
 
         .user {
@@ -397,6 +398,19 @@
             </section>
 
             <section class="panel">
+                <h3 class="section-title">房間共享</h3>
+
+                <div id="room-info" class="location-box">
+                    目前尚未加入房間。你可以請 AI 建立新房間，或輸入已有的房間代碼。
+                </div>
+
+                <div class="facility-actions">
+                    <input type="text" id="room-code-input" placeholder="輸入房間代碼，例如：TRV-A8K2">
+                    <button onclick="loadRoomByCode()">載入房間</button>
+                </div>
+            </section>
+
+            <section class="panel">
                 <h3 class="section-title">目前位置</h3>
 
                 <div id="location-info" class="location-box">
@@ -426,7 +440,7 @@
                 <h3 class="section-title">記帳與分帳</h3>
 
                 <div class="expense-form">
-                    <input class="full-row" type="text" id="expense-trip-name" placeholder="旅程名稱，例如：台中一日遊">
+                    <input class="full-row" type="text" id="expense-room-code" placeholder="房間代碼，例如：TRV-A8K2；若已載入房間可留空">
 
                     <input type="text" id="expense-payer" placeholder="付款人，例如：小明">
                     <input type="number" id="expense-amount" placeholder="金額，例如：1000">
@@ -462,7 +476,6 @@
             <div id="timeline" class="timeline">
                 <div class="empty-dashboard">
                     請先在左邊輸入旅遊需求。<br>
-                    目前會先使用模擬 JSON 產生 Day Tabs、Timeline 和景點卡片。
                 </div>
             </div>
         </section>
