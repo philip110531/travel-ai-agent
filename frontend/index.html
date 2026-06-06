@@ -4,25 +4,468 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AI 導遊小助手</title>
+
     <style>
-        body { font-family: sans-serif; max-width: 600px; margin: 20px auto; }
-        #chat-box { border: 1px solid #ccc; height: 400px; padding: 10px; overflow-y: auto; margin-bottom: 10px; border-radius: 8px; }
-        .msg { margin-bottom: 10px; padding: 8px; border-radius: 5px; }
-        .user { background-color: #e3f2fd; text-align: right; }
-        .bot { background-color: #f5f5f5; text-align: left; }
-        #input-area { display: flex; gap: 10px; }
-        input { flex: 1; padding: 10px; border: 1px solid #ccc; border-radius: 4px; }
-        button { padding: 10px 20px; background-color: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, "Microsoft JhengHei", sans-serif;
+            max-width: 1200px;
+            margin: 20px auto;
+            padding: 0 16px;
+            background-color: #f4f7fb;
+            color: #222;
+        }
+
+        h2 {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .main-layout {
+            display: grid;
+            grid-template-columns: 1fr 1.4fr;
+            gap: 20px;
+            align-items: start;
+        }
+
+        .panel {
+            background-color: white;
+            border-radius: 14px;
+            padding: 16px;
+            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
+            margin-bottom: 20px;
+        }
+
+        #chat-box {
+            border: 1px solid #ddd;
+            height: 380px;
+            padding: 10px;
+            overflow-y: auto;
+            margin-bottom: 10px;
+            border-radius: 10px;
+            background-color: #fafafa;
+        }
+
+        .msg {
+            margin-bottom: 10px;
+            padding: 9px 11px;
+            border-radius: 8px;
+            line-height: 1.5;
+        }
+
+        .user {
+            background-color: #e3f2fd;
+            text-align: right;
+        }
+
+        .bot {
+            background-color: #f1f1f1;
+            text-align: left;
+        }
+
+        #input-area {
+            display: flex;
+            gap: 10px;
+        }
+
+        input {
+            width: 100%;
+            padding: 11px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+        }
+
+        button {
+            padding: 10px 18px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+
+        button:hover {
+            background-color: #005fc7;
+        }
+
+        .secondary-btn {
+            background-color: #6c757d;
+        }
+
+        .secondary-btn:hover {
+            background-color: #555f66;
+        }
+
+        .small-btn {
+            font-size: 13px;
+            padding: 7px 10px;
+            background-color: #f0f4ff;
+            color: #005fc7;
+        }
+
+        .small-btn:hover {
+            background-color: #dfe9ff;
+        }
+
+        .danger-btn {
+            background-color: #dc3545;
+            color: white;
+        }
+
+        .danger-btn:hover {
+            background-color: #b02a37;
+        }
+
+        .dashboard-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+
+        .dashboard-header h3 {
+            margin: 0;
+        }
+
+        .trip-summary {
+            font-size: 14px;
+            color: #666;
+        }
+
+        .day-tabs {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-bottom: 18px;
+        }
+
+        .day-tab {
+            background-color: #e9eef7;
+            color: #333;
+            border: none;
+            border-radius: 999px;
+            padding: 8px 14px;
+            cursor: pointer;
+        }
+
+        .day-tab.active {
+            background-color: #007bff;
+            color: white;
+        }
+
+        .timeline {
+            position: relative;
+            padding-left: 22px;
+        }
+
+        .timeline::before {
+            content: "";
+            position: absolute;
+            left: 7px;
+            top: 8px;
+            bottom: 8px;
+            width: 3px;
+            background-color: #d4dceb;
+            border-radius: 999px;
+        }
+
+        .timeline-item {
+            position: relative;
+            margin-bottom: 16px;
+        }
+
+        .timeline-dot {
+            position: absolute;
+            left: -21px;
+            top: 18px;
+            width: 14px;
+            height: 14px;
+            background-color: #007bff;
+            border: 3px solid white;
+            border-radius: 50%;
+            box-shadow: 0 0 0 2px #007bff;
+        }
+
+        .spot-card {
+            background-color: #ffffff;
+            border: 1px solid #e1e6f0;
+            border-radius: 14px;
+            padding: 14px;
+            transition: 0.2s;
+        }
+
+        .spot-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
+        }
+
+        .spot-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            gap: 12px;
+            margin-bottom: 8px;
+        }
+
+        .spot-time {
+            font-weight: bold;
+            color: #007bff;
+            white-space: nowrap;
+        }
+
+        .spot-title {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 4px;
+        }
+
+        .spot-location {
+            color: #666;
+            font-size: 14px;
+            margin-bottom: 8px;
+        }
+
+        .spot-description {
+            line-height: 1.6;
+            margin-bottom: 10px;
+        }
+
+        .status-badge {
+            font-size: 12px;
+            padding: 4px 8px;
+            border-radius: 999px;
+            white-space: nowrap;
+        }
+
+        .status-pending {
+            background-color: #fff3cd;
+            color: #856404;
+        }
+
+        .status-completed {
+            background-color: #d4edda;
+            color: #155724;
+        }
+
+        .status-cancelled {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+
+        .card-actions {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .empty-dashboard {
+            color: #777;
+            background-color: #fafafa;
+            border: 1px dashed #ccc;
+            border-radius: 12px;
+            padding: 18px;
+            text-align: center;
+            line-height: 1.6;
+        }
+
+        .section-title {
+            margin-top: 0;
+            margin-bottom: 12px;
+        }
+
+        .location-box {
+            background-color: #f8fbff;
+            border: 1px solid #d8e6ff;
+            border-radius: 12px;
+            padding: 12px;
+            line-height: 1.7;
+            margin-bottom: 12px;
+        }
+
+        .facility-actions {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-bottom: 12px;
+        }
+
+        .facility-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        .facility-card {
+            border: 1px solid #e1e6f0;
+            border-radius: 12px;
+            padding: 12px;
+            background-color: #ffffff;
+        }
+
+        .facility-card h4 {
+            margin: 0 0 8px;
+        }
+
+        .facility-card p {
+            margin: 4px 0;
+            color: #555;
+            line-height: 1.5;
+        }
+
+        .expense-form {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 12px;
+        }
+
+        .expense-form .full-row {
+            grid-column: 1 / -1;
+        }
+
+        .expense-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .expense-card {
+            border: 1px solid #e1e6f0;
+            border-radius: 12px;
+            padding: 12px;
+            background-color: #ffffff;
+        }
+
+        .expense-card-title {
+            font-weight: bold;
+            margin-bottom: 6px;
+        }
+
+        .expense-card p {
+            margin: 4px 0;
+            color: #555;
+        }
+
+        .split-result {
+            background-color: #f8fbff;
+            border: 1px solid #d8e6ff;
+            border-radius: 12px;
+            padding: 12px;
+            margin-top: 12px;
+            line-height: 1.7;
+        }
+
+        @media (max-width: 900px) {
+            .main-layout {
+                grid-template-columns: 1fr;
+            }
+
+            #chat-box {
+                height: 320px;
+            }
+
+            .facility-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .expense-form {
+                grid-template-columns: 1fr;
+            }
+        }
     </style>
 </head>
+
 <body>
     <h2>AI 旅遊導遊</h2>
-    <div id="chat-box">
-        <div class="msg bot">你好！我是你的專屬 AI 導遊，想去哪裡玩呢？</div>
-    </div>
-    <div id="input-area">
-        <input type="text" id="user-input" placeholder="輸入你想去的地方或需求...">
-        <button onclick="sendMessage()">送出</button>
+
+    <div class="main-layout">
+        <div>
+            <section class="panel">
+                <div id="chat-box">
+                    <div class="msg bot">你好！我是你的專屬 AI 導遊，想去哪裡玩呢？</div>
+                </div>
+
+                <div id="input-area">
+                    <input type="text" id="user-input" placeholder="輸入你想去的地方或需求...">
+                    <button onclick="sendMessage()">送出</button>
+                </div>
+            </section>
+
+            <section class="panel">
+                <h3 class="section-title">目前位置</h3>
+
+                <div id="location-info" class="location-box">
+                    尚未取得定位。請按下「取得目前位置」。
+                </div>
+
+                <button onclick="getCurrentLocation()">取得目前位置</button>
+            </section>
+
+            <section class="panel">
+                <h3 class="section-title">附近設施</h3>
+
+                <div class="facility-actions">
+                    <button onclick="searchNearbyToilets()">查詢附近廁所</button>
+                    <button onclick="searchNearbyParking()">查詢附近停車場</button>
+                    <button class="secondary-btn" onclick="searchAllFacilities()">全部查詢</button>
+                </div>
+
+                <div id="facility-results" class="facility-grid">
+                    <div class="empty-dashboard">
+                        請先取得定位，再查詢附近廁所或停車場。
+                    </div>
+                </div>
+            </section>
+
+            <section class="panel">
+                <h3 class="section-title">記帳與分帳</h3>
+
+                <div class="expense-form">
+                    <input class="full-row" type="text" id="expense-trip-name" placeholder="旅程名稱，例如：台中一日遊">
+
+                    <input type="text" id="expense-payer" placeholder="付款人，例如：小明">
+                    <input type="number" id="expense-amount" placeholder="金額，例如：1000">
+
+                    <input class="full-row" type="text" id="expense-description" placeholder="用途，例如：午餐">
+                    <input class="full-row" type="text" id="expense-participants" placeholder="分帳人員，用逗號分隔，例如：小明,小華,小美">
+
+                    <button class="full-row" onclick="addExpense()">新增花費</button>
+                </div>
+
+                <div id="expense-list" class="expense-list">
+                    <div class="empty-dashboard">
+                        目前沒有任何帳目。
+                    </div>
+                </div>
+
+                <div id="split-result" class="split-result">
+                    分帳結果會顯示在這裡。
+                </div>
+            </section>
+        </div>
+
+        <section class="panel">
+            <div class="dashboard-header">
+                <div>
+                    <h3 id="trip-title">行程儀表板</h3>
+                    <div id="trip-summary" class="trip-summary">目前尚未產生行程</div>
+                </div>
+            </div>
+
+            <div id="day-tabs" class="day-tabs"></div>
+
+            <div id="timeline" class="timeline">
+                <div class="empty-dashboard">
+                    請先在左邊輸入旅遊需求。<br>
+                    目前會先使用模擬 JSON 產生 Day Tabs、Timeline 和景點卡片。
+                </div>
+            </div>
+        </section>
     </div>
 
     <script src="app.js"></script>
