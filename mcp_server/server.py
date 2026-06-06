@@ -89,12 +89,12 @@ def find_nearby_toilets(latitude: float, longitude: float) -> str:
 # ---------------------------------------------------------
 
 @mcp.tool
-def add_trip_expense(trip_name: str, payer: str, amount: float, description: str, participants: str) -> str:
+def add_trip_expense(room_code: str, payer: str, amount: float, description: str, participants: str) -> str:
     """
-    新增一筆旅途花費，用於群組記帳與分帳。
+    新增一筆旅途花費到房間。
     Args:
-        trip_name (str): 這趟旅程的名稱 (例如: 宜蘭二日遊)。
-        payer (str): 付錢的人是誰 (例如: 小明)。
+        room_code (str): 房間代碼。
+        payer (str): 付錢的人 (例如: 小明)。
         amount (float): 總共付了多少錢。
         description (str): 這筆錢花在哪裡 (例如: 午餐吃牛肉麵)。
         participants (str): 有誰要一起分這筆錢，請用逗號分隔名字 (例如: 小明,小華,小美)。
@@ -102,7 +102,7 @@ def add_trip_expense(trip_name: str, payer: str, amount: float, description: str
         str: 記帳結果回報。
     """
     print(f"--- 收到記帳請求！{payer} 付了 {amount} ({description}) ---", file=sys.stderr)
-    return database.add_expense(trip_name, payer, amount, description, participants)
+    return database.add_expense(room_code, payer, amount, description, participants)
 
 # ==========================================
 # 新增的工具：天氣與停車場
@@ -159,15 +159,75 @@ def find_nearby_parking(latitude: float, longitude: float, radius: int = 500) ->
     return reply
 
 # ==========================================
-# 行程管理工具區
+# 房間管理工具區 (新增：無帳號狀態共享)
 # ==========================================
 
 @mcp.tool
-def add_trip_schedule(trip_name: str, day: int, time: str, location: str, city: str, town: str, description: str = "") -> str:
+def create_room_and_get_code(room_name: str) -> str:
     """
-    安排新增行程。
+    建立新房間並取得 6 碼房間代碼。
+    當使用者開始新的行程規劃時，呼叫此工具。
     Args:
-        trip_name (str): 旅程名稱。
+        room_name (str): 房間名稱 (例如: 台中三日遊)。
+    Returns:
+        str: 包含房間代碼的 JSON 結果。
+    """
+    print(f"--- 建立新房間：{room_name} ---", file=sys.stderr)
+    return database.create_room(room_name)
+
+@mcp.tool
+def get_or_load_room(room_code: str, room_name: str = "") -> str:
+    """
+    取得現有房間。
+    當使用者提供房間代碼時，呼叫此工具加載房間。
+    Args:
+        room_code (str): 房間代碼 (例如: TRV-A8K2)。
+        room_name (str): 如果是新房間，請提供名稱。
+    Returns:
+        str: 包含結果的 JSON 字符串。
+    """
+    print(f"--- 加載或建立房間：{room_code} ---", file=sys.stderr)
+    return database.get_or_create_room(room_code, room_name)
+
+@mcp.tool
+def save_room_itinerary_json(room_code: str, itinerary_json: str) -> str:
+    """
+    保存完整的行程 JSON 到房間。
+    當使用者確認行程後，呼叫此工具保存完整的行程數據。
+    Args:
+        room_code (str): 房間代碼。
+        itinerary_json (str): 完整的行程 JSON 字符串。
+    Returns:
+        str: 包含結果的 JSON 字符串。
+    """
+    print(f"--- 保存房間行程：{room_code} ---", file=sys.stderr)
+    return database.update_room_itinerary(room_code, itinerary_json)
+
+@mcp.tool
+def get_room_summary(room_code: str) -> str:
+    """
+    取得房間的完整行程和記帳摘要。
+    用於前端顯示房間的所有信息。
+    Args:
+        room_code (str): 房間代碼。
+    Returns:
+        str: 包含行程和記帳信息的總結。
+    """
+    print(f"--- 取得房間摘要：{room_code} ---", file=sys.stderr)
+    schedule = database.get_room_schedule(room_code)
+    expenses = database.get_room_expenses(room_code)
+    return f"{schedule}\n\n{expenses}"
+
+# ==========================================
+# 行程管理工具區 (已更新為使用 room_code)
+# ==========================================
+
+@mcp.tool
+def add_trip_schedule(room_code: str, day: int, time: str, location: str, city: str, town: str, description: str = "") -> str:
+    """
+    安排新增行程到房間。
+    Args:
+        room_code (str): 房間代碼。
         day (int): 第幾天。
         time (str): 時間 (如: 10:30)。
         location (str): 地點名稱 (如: 逢甲夜市)。
@@ -175,12 +235,12 @@ def add_trip_schedule(trip_name: str, day: int, time: str, location: str, city: 
         town (str): 鄉鎮市區 (如: 西屯區)。
         description (str): 備註。
     """
-    return database.add_schedule_item(trip_name, day, time, location, city, town, description)
+    return database.add_schedule_item(room_code, day, time, location, city, town, description)
 
 @mcp.tool
-def query_trip_schedule(trip_name: str) -> str:
-    """查詢行程表，並取得各行程的【行程編號 ID】。"""
-    return database.get_trip_schedule(trip_name)
+def query_trip_schedule(room_code: str) -> str:
+    """查詢房間的完整行程表。"""
+    return database.get_room_schedule(room_code)
 
 @mcp.tool
 def modify_trip_schedule(item_id: int, new_time: str, new_location: str, new_city: str, new_town: str) -> str:
