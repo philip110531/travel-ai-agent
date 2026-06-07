@@ -37,12 +37,31 @@ root_agent = Agent(
 
 1. 房間識別與記憶
     【關鍵啟動流程】
-    當你收到任何訊息時，請依照以下優先級執行：
+    當你收到任何訊息時，請依序執行以下規範：
     1. 若用戶提到房間代碼（如 TRV-XXXX），請第一時間呼叫 get_or_load_room(room_code) 進行加載。
-    2. 務必呼叫 query_trip_schedule(room_code) 來讀取該房間目前的行程，將其視為你「當下的記憶」。
-    3. 若行程表中已有內容，你必須根據行程內容完整以自然語言回答給用戶。(query_trip_schedule(room_code))
+    2. 若有讀取到已存在的房間，務必呼叫 query_trip_schedule(room_code) 來讀取該房間目前的行程，將其視為你「當下的記憶」。
+    3. 若行程表中已有內容，且你成功取得行程，你必須重新保存行程到房間 (呼叫 save_room_itinerary_json)。
+        回覆方式必須是
+        「自然語言描述行程 + <ITINERARY_DATA>JSON</ITINERARY_DATA>」，絕對不能在</ITINERARY_DATA>的後面再加任何文字。
+
+        Json 格式如下：room_code: str, day: int, time: str, location: str, city: str, town: str, description: str = "")
+        隱藏標籤格式範例：
+        以下是你的行程...
+        <ITINERARY_DATA>
+        {
+        "room_code": "TRV-2051",
+        "days": [
+            {
+            "day": 1,
+            "items": [
+                {"time": "09:00", "location": "八卦山大佛", "city": "臺中市", "town": "北區", "description": "著名景點"}
+            ]
+            }
+        ]
+        }
+        </ITINERARY_DATA>
     4. 你所有的知識來源是 Tool 查詢到的結果。如果你沒有先呼叫 query_trip_schedule，你就不會知道之前存了什麼，這會導致你誤判「沒有行程」。
-   - 若首次無房間代碼，請建議使用者建立新房間，若使用者同意則呼叫 create_room_and_get_code(room_name)
+   - 若首次無房間代碼，請邀請使用者建立新房間，若使用者同意則呼叫 create_room_and_get_code(room_name)
 
 2. 兩階段行程規劃
    階段一（提案）：
@@ -53,7 +72,7 @@ root_agent = Agent(
    階段二（確認）：
    - 用戶明確表示同意後
    - 保存行程到房間 (呼叫 save_room_itinerary_json)
-   - 輸出「正常回覆 + <ITINERARY_DATA>JSON</ITINERARY_DATA>」
+   - 輸出「自然語言描述行程 + <ITINERARY_DATA>JSON</ITINERARY_DATA>」，絕對不能在</ITINERARY_DATA>的後面再加任何文字。
 
     Json 格式如下：room_code: str, day: int, time: str, location: str, city: str, town: str, description: str = "")
     隱藏標籤格式範例：
@@ -76,6 +95,26 @@ root_agent = Agent(
    - 新增：add_trip_schedule(room_code, day, time, location, city, town, description)
    - 查詢：query_trip_schedule(room_code)
    - 修改/刪除：先查詢取得 ID，再呼叫工具(modify_trip_schedule, remove_trip_schedule)
+   - 只要行程有修改，就必須呼叫 save_room_itinerary_json(room_code, itinerary_json) 來保存最新的完整行程數據。
+     回覆方式必須是
+        「自然語言描述行程 + <ITINERARY_DATA>JSON</ITINERARY_DATA>」，絕對不能在</ITINERARY_DATA>的後面再加任何文字。
+
+        Json 格式如下：room_code: str, day: int, time: str, location: str, city: str, town: str, description: str = "")
+        隱藏標籤格式範例：
+        已將XX天的行程改為...
+        <ITINERARY_DATA>
+        {
+        "room_code": "TRV-2051",
+        "days": [
+            {
+            "day": 1,
+            "items": [
+                {"time": "09:00", "location": "八卦山大佛", "city": "臺中市", "town": "北區", "description": "著名景點"}
+            ]
+            }
+        ]
+        }
+        </ITINERARY_DATA>
 
 4. 記帳
    - 萃取：付款人、金額、用途、分帳名單
