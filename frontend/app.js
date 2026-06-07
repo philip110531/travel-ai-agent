@@ -7,7 +7,7 @@ const USE_MOCK_DATA = false;
 
 // ADK API Server 位置
 // 你目前是用：adk api_server --port 8001
-const ADK_BASE_URL = "http://127.0.0.1:8001";
+const ADK_BASE_URL = "";
 
 // ADK 的 app_name 通常是你的專案資料夾名稱
 // 你之前已經把 travel-ai-agent 改成 travel_ai_agent，所以這裡用底線版本
@@ -302,11 +302,55 @@ function processAiResponse(rawResponseText) {
 
     if (chatMessage) {
         appendMessage("bot", chatMessage);
+        tryRenderFacilityFromText(chatMessage);
     }
 
     if (itineraryJson) {
         updateItineraryFromJson(itineraryJson);
     }
+}
+
+
+function tryRenderFacilityFromText(responseText) {
+    const isToiletResponse =
+        responseText.includes("公廁") ||
+        responseText.includes("廁所");
+
+    const isParkingResponse =
+        responseText.includes("停車場");
+
+    if (!isToiletResponse && !isParkingResponse) {
+        return;
+    }
+
+    const facilityResults = document.getElementById("facility-results");
+
+    if (!facilityResults) {
+        console.warn("找不到 facility-results 容器");
+        return;
+    }
+
+    let title = "附近設施";
+    let type = "其他";
+    let icon = "📍";
+
+    if (isToiletResponse) {
+        title = "附近廁所";
+        type = "公廁";
+        icon = "🚻";
+    } else if (isParkingResponse) {
+        title = "附近停車場";
+        type = "停車場";
+        icon = "🅿️";
+    }
+
+    facilityResults.innerHTML = `
+        <div class="facility-card">
+            <h4>${icon} ${escapeHtml(title)}</h4>
+            <p>類型：${escapeHtml(type)}</p>
+            <p>${formatBotMessage(responseText)}</p>
+        </div>
+    `;
 }
 
 

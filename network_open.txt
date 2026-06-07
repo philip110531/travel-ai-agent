@@ -1,0 +1,5 @@
+1. mcp_server run python debuger
+2. adk api_server --port 8001
+3. cd frontend 
+     python frontend_server.py
+4. ngrok http 5500
