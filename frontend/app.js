@@ -16,8 +16,8 @@ const ADK_APP_NAME = "travel_ai_agent";
 // 前端固定使用者 ID
 const ADK_USER_ID = "user";
 
-// ADK 需要 session_id，第一次送訊息前會自動建立
-let adkSessionId = null;
+// ADK 需要 session_id，存在 localStorage，避免頁面刷新後馬上遺失
+let adkSessionId = localStorage.getItem("adkSessionId");
 
 let currentItinerary = null;
 let currentDay = 1;
@@ -29,7 +29,11 @@ let expenses = [];
 // =====================================================
 // 送出使用者訊息
 // =====================================================
-async function sendMessage() {
+async function sendMessage(event) {
+    if (event) {
+        event.preventDefault();
+    }
+
     const input = document.getElementById("user-input");
     const text = input.value.trim();
 
@@ -71,6 +75,7 @@ async function createAdkSessionIfNeeded() {
     const data = await response.json();
 
     adkSessionId = data.id;
+    localStorage.setItem("adkSessionId", adkSessionId);
 
     return adkSessionId;
 }
@@ -100,7 +105,8 @@ async function callAdkAgent(userText) {
                         text: userText
                     }
                 ]
-            }
+            },
+            streaming: false
         })
     });
 
@@ -110,6 +116,7 @@ async function callAdkAgent(userText) {
     }
 
     const sseText = await response.text();
+    console.log("ADK SSE 原始回傳：", sseText);
 
     return extractTextFromSse(sseText);
 }
@@ -137,7 +144,6 @@ function extractTextFromSse(sseText) {
 
         try {
             const eventData = JSON.parse(jsonText);
-
             const parts = eventData.content?.parts;
 
             if (Array.isArray(parts)) {
@@ -190,20 +196,6 @@ async function sendTextToAgent(text) {
                     "city": "臺中市",
                     "town": "西區",
                     "description": "附近有很多餐廳與咖啡廳，適合安排午餐與散步。",
-                    "status": "pending"
-                }
-            ]
-        },
-        {
-            "day": 2,
-            "items": [
-                {
-                    "id": 3,
-                    "time": "10:00",
-                    "location": "彩虹眷村",
-                    "city": "臺中市",
-                    "town": "南屯區",
-                    "description": "色彩鮮明、很好拍照的景點。",
                     "status": "pending"
                 }
             ]
@@ -333,7 +325,7 @@ function processAiResponse(rawResponseText) {
 
 
 // =====================================================
-// 從文字中抓房間代碼，例如 TRV-A8K2
+// 房間代碼處理
 // =====================================================
 function extractRoomCodeFromText(text) {
     const roomCodeRegex = /(TRV-[A-Z0-9]{4})/;
@@ -363,6 +355,7 @@ function setCurrentRoomCode(roomCode) {
     }
 
     const expenseRoomCodeInput = document.getElementById("expense-room-code");
+
     if (expenseRoomCodeInput && !expenseRoomCodeInput.value.trim()) {
         expenseRoomCodeInput.value = currentRoomCode;
     }
@@ -393,8 +386,7 @@ function loadRoomByCode() {
 
 
 // =====================================================
-// 用解析出來的 itinerary JSON 更新行程儀表板
-// 新版後端可能只有 room_code + days，不一定有 tripName。
+// 用 itinerary JSON 更新行程儀表板
 // =====================================================
 function updateItineraryFromJson(itineraryJson) {
     if (itineraryJson.room_code) {
@@ -457,7 +449,7 @@ function updateItineraryFromJson(itineraryJson) {
 
 
 // =====================================================
-// 渲染整個行程儀表板
+// 渲染行程儀表板
 // =====================================================
 function renderDashboard(itinerary) {
     const tripTitle = document.getElementById("trip-title");
@@ -486,6 +478,7 @@ function renderDayTabs(days) {
 
     days.forEach((dayData) => {
         const tabButton = document.createElement("button");
+        tabButton.type = "button";
         tabButton.className = "day-tab";
         tabButton.textContent = `Day ${dayData.day}`;
 
@@ -570,8 +563,8 @@ function createSpotCard(item) {
         </div>
 
         <div class="card-actions">
-            <button class="small-btn" onclick="showSpotDetail(${item.id})">查看詳情</button>
-            <button class="small-btn" onclick="speakSpot(${item.id})">語音導覽</button>
+            <button type="button" class="small-btn" onclick="showSpotDetail(${item.id})">查看詳情</button>
+            <button type="button" class="small-btn" onclick="speakSpot(${item.id})">語音導覽</button>
         </div>
     `;
 
@@ -726,8 +719,7 @@ function getCurrentLocation() {
 
 
 // =====================================================
-// 查詢附近廁所
-// 目前走 Agent API：把需求文字和目前座標一起送給後端。
+// 附近設施查詢
 // =====================================================
 function searchNearbyToilets() {
     if (!currentLocation) {
@@ -826,9 +818,7 @@ function renderFacilities(data) {
 
 
 // =====================================================
-// 新增花費
-// 目前先在前端記帳與分帳。
-// 同時也把記帳句子送給 Agent，讓後端有機會存入 room_code 對應資料庫。
+// 記帳與分帳
 // =====================================================
 function addExpense() {
     const roomCodeInput = document.getElementById("expense-room-code");
@@ -919,7 +909,7 @@ function renderExpenses() {
             <p>付款人：${escapeHtml(expense.payer)}</p>
             <p>金額：${escapeHtml(expense.amount)} 元</p>
             <p>分帳人員：${escapeHtml(expense.participants.join("、"))}</p>
-            <button class="small-btn danger-btn" onclick="deleteExpense(${expense.id})">刪除</button>
+            <button type="button" class="small-btn danger-btn" onclick="deleteExpense(${expense.id})">刪除</button>
         `;
 
         expenseList.appendChild(card);
@@ -996,7 +986,7 @@ function calculateSplit() {
 
 
 // =====================================================
-// 防止使用者輸入或資料內容破壞 HTML
+// 工具函式
 // =====================================================
 function escapeHtml(text) {
     return String(text)
@@ -1009,7 +999,7 @@ function escapeHtml(text) {
 
 
 // =====================================================
-// 讓使用者按 Enter 也可以送出訊息
+// DOM 初始化：Enter 送出，並避免刷新
 // =====================================================
 document.addEventListener("DOMContentLoaded", () => {
     const input = document.getElementById("user-input");
@@ -1017,7 +1007,8 @@ document.addEventListener("DOMContentLoaded", () => {
     if (input) {
         input.addEventListener("keydown", (event) => {
             if (event.key === "Enter") {
-                sendMessage();
+                event.preventDefault();
+                sendMessage(event);
             }
         });
     }

@@ -54,7 +54,6 @@
             padding: 9px 11px;
             border-radius: 8px;
             line-height: 1.5;
-            white-space: pre-wrap;
         }
 
         .user {
@@ -308,16 +307,6 @@
             background-color: #ffffff;
         }
 
-        .facility-card h4 {
-            margin: 0 0 8px;
-        }
-
-        .facility-card p {
-            margin: 4px 0;
-            color: #555;
-            line-height: 1.5;
-        }
-
         .expense-form {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -345,11 +334,6 @@
         .expense-card-title {
             font-weight: bold;
             margin-bottom: 6px;
-        }
-
-        .expense-card p {
-            margin: 4px 0;
-            color: #555;
         }
 
         .split-result {
@@ -393,20 +377,20 @@
 
                 <div id="input-area">
                     <input type="text" id="user-input" placeholder="輸入你想去的地方或需求...">
-                    <button onclick="sendMessage()">送出</button>
+                    <button type="button" onclick="sendMessage(event)">送出</button>
                 </div>
             </section>
 
             <section class="panel">
-                <h3 class="section-title">房間共享</h3>
+                <h3 class="section-title">房間代碼</h3>
 
                 <div id="room-info" class="location-box">
-                    目前尚未加入房間。你可以請 AI 建立新房間，或輸入已有的房間代碼。
+                    尚未載入房間。你可以請 AI 建立房間，或輸入房間代碼載入。
                 </div>
 
-                <div class="facility-actions">
-                    <input type="text" id="room-code-input" placeholder="輸入房間代碼，例如：TRV-A8K2">
-                    <button onclick="loadRoomByCode()">載入房間</button>
+                <div id="input-area">
+                    <input type="text" id="room-code-input" placeholder="例如：TRV-A8K2">
+                    <button type="button" onclick="loadRoomByCode()">載入房間</button>
                 </div>
             </section>
 
@@ -417,16 +401,16 @@
                     尚未取得定位。請按下「取得目前位置」。
                 </div>
 
-                <button onclick="getCurrentLocation()">取得目前位置</button>
+                <button type="button" onclick="getCurrentLocation()">取得目前位置</button>
             </section>
 
             <section class="panel">
                 <h3 class="section-title">附近設施</h3>
 
                 <div class="facility-actions">
-                    <button onclick="searchNearbyToilets()">查詢附近廁所</button>
-                    <button onclick="searchNearbyParking()">查詢附近停車場</button>
-                    <button class="secondary-btn" onclick="searchAllFacilities()">全部查詢</button>
+                    <button type="button" onclick="searchNearbyToilets()">查詢附近廁所</button>
+                    <button type="button" onclick="searchNearbyParking()">查詢附近停車場</button>
+                    <button type="button" class="secondary-btn" onclick="searchAllFacilities()">全部查詢</button>
                 </div>
 
                 <div id="facility-results" class="facility-grid">
@@ -440,7 +424,7 @@
                 <h3 class="section-title">記帳與分帳</h3>
 
                 <div class="expense-form">
-                    <input class="full-row" type="text" id="expense-room-code" placeholder="房間代碼，例如：TRV-A8K2；若已載入房間可留空">
+                    <input class="full-row" type="text" id="expense-room-code" placeholder="房間代碼，例如：TRV-A8K2">
 
                     <input type="text" id="expense-payer" placeholder="付款人，例如：小明">
                     <input type="number" id="expense-amount" placeholder="金額，例如：1000">
@@ -448,7 +432,7 @@
                     <input class="full-row" type="text" id="expense-description" placeholder="用途，例如：午餐">
                     <input class="full-row" type="text" id="expense-participants" placeholder="分帳人員，用逗號分隔，例如：小明,小華,小美">
 
-                    <button class="full-row" onclick="addExpense()">新增花費</button>
+                    <button type="button" class="full-row" onclick="addExpense()">新增花費</button>
                 </div>
 
                 <div id="expense-list" class="expense-list">
@@ -476,6 +460,7 @@
             <div id="timeline" class="timeline">
                 <div class="empty-dashboard">
                     請先在左邊輸入旅遊需求。<br>
+                    使用者確認行程後，AI 回傳的 JSON 會更新到這裡。
                 </div>
             </div>
         </section>
