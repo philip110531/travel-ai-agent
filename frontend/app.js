@@ -194,7 +194,7 @@ async function sendTextToAgent(text) {
         const responseText = await callAdkAgent(messageToAgent);
 
         if (!responseText) {
-            appendMessage("bot", "AI 沒有回傳文字內容。可能是模型端忙碌、請求被中斷，或 ADK 回傳格式中沒有文字。請稍後再試一次。");
+            appendMessage("bot", "AI 沒有回傳文字內容。可能是模型端忙碌、請求被中斷。請稍後再試一次。");
             return;
         }
 

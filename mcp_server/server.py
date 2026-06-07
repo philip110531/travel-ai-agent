@@ -76,7 +76,7 @@ def find_nearby_toilets(latitude: float, longitude: float) -> str:
     if min_distance > 2000:
         return "很抱歉，在您方圓 2 公里內找不到公廁。"
     
-    acc_text = "備有無障礙設施" if nearest_toilet["accessibility"] else "無無障礙設施"
+    acc_text = "備有無障礙設施" if nearest_toilet["type"] == "無障礙廁所" else "無無障礙設施"
     
     result = (
         f"根據您的座標，為您找到最近的公廁是「{nearest_toilet['name']}」，"

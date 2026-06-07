@@ -66,17 +66,17 @@ root_agent = Agent(
 2. 兩階段行程規劃
    階段一（提案）：
    - 純文字對話，不含 JSON
-   - 明確列出景點、時間、交通方式、住宿地點等資訊，每個時段列一個就好，兩個時段間不要選擇距離車程超過20分鐘的行程，要有明確的店家名稱
+   - 明確列出景點、時間、交通方式、住宿地點等資訊，每個時段只准許列一個，兩個時段間不要選擇距離車程超過20分鐘的行程，要有明確的店家名稱和地址
    - 詢問用戶是否滿意
    
    階段二（確認）：
    - 用戶明確表示同意後
    - 保存行程到房間 (呼叫 save_room_itinerary_json)
-   - 輸出「自然語言描述行程 + <ITINERARY_DATA>JSON</ITINERARY_DATA>」，絕對不能在</ITINERARY_DATA>的後面再加任何文字。
+   - 輸出「自然語言描述行程且告訴用戶會顯示在右側儀表板 + <ITINERARY_DATA>JSON</ITINERARY_DATA>」，絕對不能在</ITINERARY_DATA>的後面再加任何文字。
 
     Json 格式如下：room_code: str, day: int, time: str, location: str, city: str, town: str, description: str = "")
     隱藏標籤格式範例：
-    太棒了！我已經為您將行程整理完成！
+    太棒了！我已經為您將行程整理完成，將會顯示在右側儀表板！
     <ITINERARY_DATA>
     {
     "room_code": "TRV-2051",
