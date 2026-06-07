@@ -24,7 +24,7 @@ let currentDay = 1;
 let currentLocation = null;
 let currentRoomCode = null;
 let expenses = [];
-
+let isAgentRunning = false;
 
 // =====================================================
 // 送出使用者訊息
@@ -167,49 +167,12 @@ function extractTextFromSse(sseText) {
 // 所有需要透過 AI 處理的功能，都可以共用這個函式。
 // =====================================================
 async function sendTextToAgent(text) {
-    if (USE_MOCK_DATA) {
-        setTimeout(() => {
-            const mockAiResponse = `
-我已經幫你安排好一份台中二日遊行程，右邊會同步更新成行程儀表板。
-
-<ITINERARY_DATA>
-{
-    "room_code": "TRV-DEMO",
-    "tripName": "台中二日遊",
-    "days": [
-        {
-            "day": 1,
-            "items": [
-                {
-                    "id": 1,
-                    "time": "09:30",
-                    "location": "國立自然科學博物館",
-                    "city": "臺中市",
-                    "town": "北區",
-                    "description": "適合早上參觀的室內景點。",
-                    "status": "pending"
-                },
-                {
-                    "id": 2,
-                    "time": "12:00",
-                    "location": "勤美誠品綠園道",
-                    "city": "臺中市",
-                    "town": "西區",
-                    "description": "附近有很多餐廳與咖啡廳，適合安排午餐與散步。",
-                    "status": "pending"
-                }
-            ]
-        }
-    ]
-}
-</ITINERARY_DATA>
-            `;
-
-            processAiResponse(mockAiResponse);
-        }, 700);
-
+    if (isAgentRunning) {
+        appendMessage("bot", "上一個請求還在處理中，請稍等一下再送出。");
         return;
     }
+
+    isAgentRunning = true;
 
     try {
         appendMessage("bot", "正在幫你處理，請稍候...");
@@ -231,14 +194,21 @@ async function sendTextToAgent(text) {
         const responseText = await callAdkAgent(messageToAgent);
 
         if (!responseText) {
-            appendMessage("bot", "AI 沒有回傳文字內容，請查看 ADK 終端機是否有錯誤。");
+            appendMessage("bot", "AI 沒有回傳文字內容。可能是模型端忙碌、請求被中斷，或 ADK 回傳格式中沒有文字。請稍後再試一次。");
             return;
         }
 
         processAiResponse(responseText);
     } catch (error) {
         console.error("呼叫 ADK 失敗：", error);
-        appendMessage("bot", `連線 ADK 失敗：${error.message}`);
+
+        if (String(error.message).includes("503") || String(error.message).includes("UNAVAILABLE")) {
+            appendMessage("bot", "Gemini 目前高負載，這不是你的前端錯誤。請等一下再按一次送出。");
+        } else {
+            appendMessage("bot", `連線 ADK 失敗：${error.message}`);
+        }
+    } finally {
+        isAgentRunning = false;
     }
 }
 
