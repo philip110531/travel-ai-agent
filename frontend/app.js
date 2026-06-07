@@ -302,11 +302,55 @@ function processAiResponse(rawResponseText) {
 
     if (chatMessage) {
         appendMessage("bot", chatMessage);
+        tryRenderFacilityFromText(chatMessage);
     }
 
     if (itineraryJson) {
         updateItineraryFromJson(itineraryJson);
     }
+}
+
+
+function tryRenderFacilityFromText(responseText) {
+    const isToiletResponse =
+        responseText.includes("公廁") ||
+        responseText.includes("廁所");
+
+    const isParkingResponse =
+        responseText.includes("停車場");
+
+    if (!isToiletResponse && !isParkingResponse) {
+        return;
+    }
+
+    const facilityResults = document.getElementById("facility-results");
+
+    if (!facilityResults) {
+        console.warn("找不到 facility-results 容器");
+        return;
+    }
+
+    let title = "附近設施";
+    let type = "其他";
+    let icon = "📍";
+
+    if (isToiletResponse) {
+        title = "附近廁所";
+        type = "公廁";
+        icon = "🚻";
+    } else if (isParkingResponse) {
+        title = "附近停車場";
+        type = "停車場";
+        icon = "🅿️";
+    }
+
+    facilityResults.innerHTML = `
+        <div class="facility-card">
+            <h4>${icon} ${escapeHtml(title)}</h4>
+            <p>類型：${escapeHtml(type)}</p>
+            <p>${formatBotMessage(responseText)}</p>
+        </div>
+    `;
 }
 
 
