@@ -293,8 +293,8 @@ def get_coordinates(location_name: str) -> str:
 if __name__ == "__main__":
     print("啟動 Travel Guide MCP Server...", file=sys.stderr)
     # 使用 HTTP transport 啟動，port 設為 8000 (ngrok用下面這條)
-    # mcp.run(transport="http", port=8000)
+    mcp.run(transport="http", port=8000)
     
     
     # 使用本基測是用下面這條
-    mcp.run(transport="stdio")
+    # mcp.run(transport="stdio")

@@ -8,17 +8,20 @@ load_dotenv()
 
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-SERVER_SCRIPT_PATH = os.path.join(BASE_DIR, "mcp_server", "server.py")
-
+# SERVER_SCRIPT_PATH = os.path.join(BASE_DIR, "mcp_server", "server.py")
+MCP_SERVER_URL = "http://127.0.0.1:8000/mcp"
 # ==========================================
 # 設定 MCP Toolset：使用本機 Stdio 傳輸
 # ==========================================
 mcp_toolset = MCPToolset(
-    connection_params=StdioConnectionParams(
-        server_params={
-            "command": sys.executable,
-            "args": [SERVER_SCRIPT_PATH],
-        }
+    # connection_params=StdioConnectionParams(
+    #     server_params={
+    #         "command": sys.executable,
+    #         "args": [SERVER_SCRIPT_PATH],
+    #     }
+    # )
+    connection_params=StreamableHTTPConnectionParams(
+        url=MCP_SERVER_URL
     )
 )
 
