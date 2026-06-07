@@ -222,10 +222,26 @@ function appendMessage(role, text) {
 
     const messageDiv = document.createElement("div");
     messageDiv.className = `msg ${role}`;
-    messageDiv.textContent = text;
+
+    if (role === "bot") {
+        messageDiv.innerHTML = formatBotMessage(text);
+    } else {
+        messageDiv.textContent = text;
+    }
 
     chatBox.appendChild(messageDiv);
     chatBox.scrollTop = chatBox.scrollHeight;
+}
+
+
+function formatBotMessage(text) {
+    let safeText = escapeHtml(text);
+
+    safeText = safeText.replace(/\*\*\s*(.*?)\s*\*\*/g, "<strong>$1</strong>");
+
+    safeText = safeText.replace(/\n/g, "<br>");
+
+    return safeText;
 }
 
 
